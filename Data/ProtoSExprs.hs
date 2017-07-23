@@ -55,6 +55,7 @@ pStr = Str <$> (char '"' *> (concat <$> many encoded) <* char '"') where
             'x' -> hexEsc 2
             'u' -> hexEsc 4
             'U' -> hexEsc 8
+            _ -> error $ "BUG: missing escape character: " ++ [c]
     hexEsc :: Int -> Parser String
     hexEsc n = do
         chrs <- count n hexDigit
