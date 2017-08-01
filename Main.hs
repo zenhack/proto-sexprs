@@ -26,4 +26,6 @@ parseStmt _ = Nothing
 
 main = do
     contents <- getContents
-    print $ parseStmt <$> runParser pExpr () "" contents
+    let exprs = runParser pFile () "" contents
+    print exprs
+    print $ map parseStmt <$> exprs

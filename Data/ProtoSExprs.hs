@@ -1,6 +1,7 @@
 module Data.ProtoSExprs
   ( Expr(..)
   , pExpr
+  , pFile
   ) where
 
 import Data.List (intersperse)
@@ -26,6 +27,9 @@ instance Show Expr where
         makeSafe '"' = "\\\""
         makeSafe '\\' = "\\\\"
         makeSafe c = [c]
+
+pFile :: Parser [Expr]
+pFile = spaces >> many pExpr
 
 pAtom :: Parser Expr
 pAtom = Atom <$> many1 (letter <|> digit <|> oneOf "+=-_*&^%$@!<>?/:\\")
