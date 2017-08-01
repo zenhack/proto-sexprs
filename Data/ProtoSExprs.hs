@@ -85,7 +85,7 @@ class ToExpr a where
     listToExpr :: [a] -> Expr
     default toExpr :: (Generic a, ToExpr' (Rep a)) => a -> Expr
     toExpr x = toExpr' (from x)
-    listToExpr xs = List $ map toExpr xs
+    listToExpr = List . map toExpr
 
 class ToExpr' f where
     toExpr' :: f p -> Expr
@@ -100,14 +100,23 @@ instance ToExpr c => ToExpr' (K1 i c) where
     toExpr' (K1 c) = toExpr c
 
 instance (ToExpr' f, ToExpr' g) => ToExpr' (f :+: g) where
-    toExpr' (L1 x) = List [Atom "l", toExpr' x]
-    toExpr' (R1 x) = List [Atom "r", toExpr' x]
+    toExpr' (L1 x) = toExpr' x
+    toExpr' (R1 x) = toExpr' x
 
-instance (ToExpr' f) => ToExpr' (M1 i t f) where
-    toExpr' (M1 x) = List [Atom "m1", toExpr' x]
+instance (Constructor t, ToExpr' f) => ToExpr' (C1 t f) where
+    toExpr' con@(M1 x) = case toExpr' x of
+        List exprs -> List $ Atom (conName con) : exprs
+        expr -> List [Atom (conName con), expr]
+
+instance (Datatype t, ToExpr' f) => ToExpr' (D1 t f) where
+    toExpr' d@(M1 x) = toExpr' x
+
+instance (ToExpr' f) => ToExpr' (S1 t f) where
+    toExpr' (M1 x) = toExpr' x
 
 instance (ToExpr' f, ToExpr' g) => ToExpr' (f :*: g) where
-    toExpr' (l :*: r) = List $ (asList $ toExpr' l) ++ (asList $ toExpr' r)
+    toExpr' (l :*: r) =
+        List $ (asList $ toExpr' l) ++ (asList $ toExpr' r)
       where
         asList (List list) = list
         asList expr = [expr]
@@ -117,4 +126,5 @@ instance ToExpr Char where
     toExpr c = Atom [c] -- TODO: figure out a better way to represent chars.
     listToExpr xs = Str xs
 
-instance ToExpr a => ToExpr [a]
+instance ToExpr a => ToExpr [a] where
+    toExpr = listToExpr
