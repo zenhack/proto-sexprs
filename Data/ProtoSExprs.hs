@@ -1,12 +1,21 @@
+{-# LANGUAGE
+      DefaultSignatures
+    , TypeOperators
+    , FlexibleContexts
+    , FlexibleInstances
+    #-}
 module Data.ProtoSExprs
   ( Expr(..)
   , pExpr
   , pFile
+  , ToExpr(..)
   ) where
 
 import Data.List (intersperse)
 
 import Text.ParserCombinators.Parsec
+
+import GHC.Generics
 
 
 data Expr
@@ -70,3 +79,42 @@ pStr = Str <$> (char '"' *> (concat <$> many encoded) <* char '"') where
     hexEsc n = do
         chrs <- count n hexDigit
         return $ (:[]) . toEnum . read $ "0x" ++ chrs
+
+class ToExpr a where
+    toExpr :: a -> Expr
+    listToExpr :: [a] -> Expr
+    default toExpr :: (Generic a, ToExpr' (Rep a)) => a -> Expr
+    toExpr x = toExpr' (from x)
+    listToExpr xs = List $ map toExpr xs
+
+class ToExpr' f where
+    toExpr' :: f p -> Expr
+
+instance ToExpr' V1 where
+    toExpr' _ = undefined
+
+instance ToExpr' U1 where
+    toExpr' _ = List []
+
+instance ToExpr c => ToExpr' (K1 i c) where
+    toExpr' (K1 c) = toExpr c
+
+instance (ToExpr' f, ToExpr' g) => ToExpr' (f :+: g) where
+    toExpr' (L1 x) = List [Atom "l", toExpr' x]
+    toExpr' (R1 x) = List [Atom "r", toExpr' x]
+
+instance (ToExpr' f) => ToExpr' (M1 i t f) where
+    toExpr' (M1 x) = List [Atom "m1", toExpr' x]
+
+instance (ToExpr' f, ToExpr' g) => ToExpr' (f :*: g) where
+    toExpr' (l :*: r) = List $ (asList $ toExpr' l) ++ (asList $ toExpr' r)
+      where
+        asList (List list) = list
+        asList expr = [expr]
+
+
+instance ToExpr Char where
+    toExpr c = Atom [c] -- TODO: figure out a better way to represent chars.
+    listToExpr xs = Str xs
+
+instance ToExpr a => ToExpr [a]

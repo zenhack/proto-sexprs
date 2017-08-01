@@ -1,16 +1,22 @@
+{-# LANGUAGE DeriveGeneric #-}
 import Data.ProtoSExprs
+import GHC.Generics (Generic(..))
 
 import Text.ParserCombinators.Parsec (runParser)
 
 data LangStmt
     = Loop [LangStmt]
     | Assign String LangExpr
-    deriving(Show)
+    deriving(Show, Generic)
+instance ToExpr LangStmt
+
 
 data LangExpr
     = LangString String
     | LangBinOp String LangExpr LangExpr
-    deriving(Show)
+    deriving(Show, Generic)
+instance ToExpr LangExpr
+
 
 
 parseExpr :: Expr -> Maybe LangExpr
@@ -28,4 +34,9 @@ main = do
     contents <- getContents
     let exprs = runParser pFile () "" contents
     print exprs
+    let stmts = map parseStmt <$> exprs
     print $ map parseStmt <$> exprs
+    print $ toExpr $ Loop [ Assign "x" (LangString "hello")
+                          , Assign "y" (LangBinOp "+" (LangString "f")
+                                                      (LangString "x"))
+                          ]
