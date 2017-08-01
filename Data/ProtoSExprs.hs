@@ -15,7 +15,7 @@ data Expr
 
 
 instance Show Expr where
-    show (List as) = "[" ++ concat (intersperse " " (map show as)) ++ "]"
+    show (List as) = "(" ++ concat (intersperse " " (map show as)) ++ ")"
     show (Atom a) = a
     show (Str s) = concat
         [ "\""
@@ -31,7 +31,13 @@ pAtom :: Parser Expr
 pAtom = Atom <$> many1 (letter <|> digit <|> oneOf "+=-_*&^%$@!<>?/:\\")
 
 pList :: Parser Expr
-pList = List <$> between (char '[') (char ']') (pExpr `sepBy` spaces)
+pList = List <$> bracketed (pExpr `sepBy` spaces)
+  where
+    bracketed :: Parser [Expr] -> Parser [Expr]
+    bracketed cs = choice [ between (char '[') (char ']') cs
+                          , between (char '(') (char ')') cs
+                          , between (char '{') (char '}') cs
+                          ]
 
 pExpr :: Parser Expr
 pExpr = pList <|> pStr <|> pAtom
