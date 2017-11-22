@@ -1,1 +1,5 @@
-dist-newstyle/build/proto-sexprs-0.1.0.0/build/proto-sexprs-example/proto-sexprs-example
+#!/usr/bin/env sh
+#
+# Find the executable within dist-newstyle and run it. This is a workaround
+# until cabal implements new-run.
+exec $(find "$(dirname $0)/dist-newstyle/" -name proto-sexprs-example -type f)
