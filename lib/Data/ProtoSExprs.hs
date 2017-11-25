@@ -20,6 +20,7 @@ data Expr
     = List [Expr]
     | Atom String
     | Str String
+    deriving(Eq)
 
 
 instance Show Expr where
