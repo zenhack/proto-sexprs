@@ -5,15 +5,15 @@
 module Data.ProtoSExprs
   ( Expr(..)
   , pExpr
-  , pFile
+  , pManyExpr
   , ToExpr(..)
   ) where
 
-import Data.List (intersperse)
-
-import Text.ParserCombinators.Parsec
+import Control.Monad (void)
+import Data.List     (intersperse)
 
 import GHC.Generics
+import Text.ParserCombinators.Parsec
 
 
 data Expr
@@ -36,14 +36,20 @@ instance Show Expr where
         makeSafe '\\' = "\\\\"
         makeSafe c    = [c]
 
-pFile :: Parser [Expr]
-pFile = spaces >> many pExpr
+comment :: Parser String
+comment = char ';' >> many (noneOf "\n")
+
+ignore :: Parser ()
+ignore = void space <|> void comment
+
+pManyExpr :: Parser [Expr]
+pManyExpr = many ignore >> (pExpr `sepEndBy` many1 ignore)
 
 pAtom :: Parser Expr
 pAtom = Atom <$> many1 (letter <|> digit <|> oneOf "+=-_*&^%$@!<>?/:\\")
 
 pList :: Parser Expr
-pList = List <$> bracketed (pExpr `sepBy` spaces)
+pList = List <$> bracketed pManyExpr
   where
     bracketed :: Parser [Expr] -> Parser [Expr]
     bracketed cs = choice [ between (char '[') (char ']') cs
