@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 import Data.ProtoSExprs
-import GHC.Generics (Generic(..))
+import GHC.Generics     (Generic(..))
 
 import Text.ParserCombinators.Parsec (runParser)
 
@@ -26,9 +26,9 @@ parseExpr (List [Atom op, lhs, rhs]) =
 parseExpr _ = Nothing
 
 parseStmt :: Expr -> Maybe LangStmt
-parseStmt (List (Atom "loop":stmts)) = Loop <$> mapM parseStmt stmts
+parseStmt (List (Atom "loop":stmts))       = Loop <$> mapM parseStmt stmts
 parseStmt (List [Atom var, Atom ":=", ex]) = Assign var <$> parseExpr ex
-parseStmt _ = Nothing
+parseStmt _                                = Nothing
 
 main = do
     contents <- getContents

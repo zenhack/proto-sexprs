@@ -1,9 +1,7 @@
-{-# LANGUAGE
-      DefaultSignatures
-    , TypeOperators
-    , FlexibleContexts
-    , FlexibleInstances
-    #-}
+{-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeOperators     #-}
 module Data.ProtoSExprs
   ( Expr(..)
   , pExpr
@@ -33,9 +31,9 @@ instance Show Expr where
         , "\""
         ]
       where
-        makeSafe '"' = "\\\""
+        makeSafe '"'  = "\\\""
         makeSafe '\\' = "\\\\"
-        makeSafe c = [c]
+        makeSafe c    = [c]
 
 pFile :: Parser [Expr]
 pFile = spaces >> many pExpr
@@ -62,19 +60,19 @@ pStr = Str <$> (char '"' *> (concat <$> many encoded) <* char '"') where
     escape = do
         c <- oneOf "abnrfvtxuU\\\""
         case c of
-            'a' -> return "\a"
-            'b' -> return "\b"
-            'n' -> return "\n"
-            'r' -> return "\r"
-            'f' -> return "\f"
-            'v' -> return "\v"
-            't' -> return "\t"
+            'a'  -> return "\a"
+            'b'  -> return "\b"
+            'n'  -> return "\n"
+            'r'  -> return "\r"
+            'f'  -> return "\f"
+            'v'  -> return "\v"
+            't'  -> return "\t"
             '\\' -> return "\\"
             '\"' -> return "\""
-            'x' -> hexEsc 2
-            'u' -> hexEsc 4
-            'U' -> hexEsc 8
-            _ -> error $ "BUG: missing escape character: " ++ [c]
+            'x'  -> hexEsc 2
+            'u'  -> hexEsc 4
+            'U'  -> hexEsc 8
+            _    -> error $ "BUG: missing escape character: " ++ [c]
     hexEsc :: Int -> Parser String
     hexEsc n = do
         chrs <- count n hexDigit
@@ -106,7 +104,7 @@ instance (ToExpr' f, ToExpr' g) => ToExpr' (f :+: g) where
 instance (Constructor t, ToExpr' f) => ToExpr' (C1 t f) where
     toExpr' con@(M1 x) = case toExpr' x of
         List exprs -> List $ Atom (conName con) : exprs
-        expr -> List [Atom (conName con), expr]
+        expr       -> List [Atom (conName con), expr]
 
 instance (Datatype t, ToExpr' f) => ToExpr' (D1 t f) where
     toExpr' d@(M1 x) = toExpr' x
@@ -119,7 +117,7 @@ instance (ToExpr' f, ToExpr' g) => ToExpr' (f :*: g) where
         List $ (asList $ toExpr' l) ++ (asList $ toExpr' r)
       where
         asList (List list) = list
-        asList expr = [expr]
+        asList expr        = [expr]
 
 
 instance ToExpr Char where
