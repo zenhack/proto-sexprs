@@ -39,3 +39,14 @@ executable proto-sexprs-example
     , parsec >=3.1 && <3.2
   hs-source-dirs: exe
   default-language:    Haskell2010
+
+test-suite tests
+  type: exitcode-stdio-1.0
+  hs-source-dirs: tests
+  main-is: Main.hs
+  ghc-options:
+    -Wall
+  build-depends:
+      base >= 4.9 && < 5.0
+    , proto-sexprs
+  default-language:    Haskell2010
