@@ -65,7 +65,7 @@ pStr = Str <$> (char '"' *> (concat <$> many encoded) <* char '"') where
     encoded = (char '\\' >> escape) <|> strSafe
     strSafe = (:[]) <$> noneOf "\\\""
     escape = do
-        c <- oneOf "abnrfvtxuU\\\""
+        c <- oneOf "abnrfvtxuU\\\"\n"
         case c of
             'a'  -> return "\a"
             'b'  -> return "\b"
@@ -79,6 +79,7 @@ pStr = Str <$> (char '"' *> (concat <$> many encoded) <* char '"') where
             'x'  -> hexEsc 2
             'u'  -> hexEsc 4
             'U'  -> hexEsc 8
+            '\n' -> spaces >> return ""
             _    -> error $ "BUG: missing escape character: " ++ [c]
     hexEsc :: Int -> Parser String
     hexEsc n = do

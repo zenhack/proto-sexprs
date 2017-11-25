@@ -25,6 +25,15 @@ exprCases =
     , ( "(  list-with-leading-and-trailing-space )"
       , Just $ List [Atom "list-with-leading-and-trailing-space"]
       )
+
+    -- check that \ followed by newline skips leading whitespace on the next
+    -- line:
+    , ( unlines
+        [ "\"hello, \\"
+        , "      world\""
+        ]
+      , Just $ Str "hello, world"
+      )
     ]
 
 exprTest :: String -> Maybe Expr -> IO ()
