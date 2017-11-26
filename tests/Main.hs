@@ -34,6 +34,9 @@ exprCases =
         ]
       , Just $ Str "hello, world"
       )
+
+    -- Check that successive double-quotes render as a single double-quote:
+    , ("\"hello, \"\"world\"\"\"", Just $ Str "hello, \"world\"")
     ]
 
 exprTest :: String -> Maybe Expr -> IO ()

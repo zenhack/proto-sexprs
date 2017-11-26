@@ -62,8 +62,10 @@ pExpr = pList <|> pStr <|> pAtom
 
 pStr :: Parser Expr
 pStr = Str <$> (char '"' *> (concat <$> many encoded) <* char '"') where
-    encoded = (char '\\' >> escape) <|> strSafe
+    encoded = (char '\\' >> escape) <|> strSafe <|> doubleDouble
     strSafe = (:[]) <$> noneOf "\\\""
+    -- two double quotes coalesce into one:
+    doubleDouble = try (string "\"\"") >> return "\""
     escape = do
         c <- oneOf "abnrfvtxuU\\\"\n"
         case c of
