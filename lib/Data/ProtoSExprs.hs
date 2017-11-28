@@ -49,13 +49,7 @@ pAtom :: Parser Expr
 pAtom = Atom <$> many1 (letter <|> digit <|> oneOf "+=-_*&^%$@!<>?/:\\")
 
 pList :: Parser Expr
-pList = List <$> bracketed pManyExpr
-  where
-    bracketed :: Parser [Expr] -> Parser [Expr]
-    bracketed cs = choice [ between (char '[') (char ']') cs
-                          , between (char '(') (char ')') cs
-                          , between (char '{') (char '}') cs
-                          ]
+pList = List <$> between (char '(') (char ')') pManyExpr
 
 pExpr :: Parser Expr
 pExpr = pList <|> pStr <|> pAtom

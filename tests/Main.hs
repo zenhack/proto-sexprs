@@ -14,14 +14,6 @@ exprCases =
     , ("(; a comment in a list\n)", Just $ List [])
     , ("(; a comment causing an error)", Nothing)
     , ("(two atoms)", Just $ List [Atom "two", Atom "atoms"])
-
-    -- mismatched bracket types:
-    , ("[)", Nothing)
-    , ("([)]", Nothing)
-
-    -- nested brackets of different types:
-    , ("([])", Just $ List [List []])
-
     , ( "(  list-with-leading-and-trailing-space )"
       , Just $ List [Atom "list-with-leading-and-trailing-space"]
       )
