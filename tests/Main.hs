@@ -4,7 +4,6 @@ module Main where
 -- the test-framework pacakge)
 
 import Data.ProtoSExprs
-import Text.ParserCombinators.Parsec (runParser)
 
 exprCases :: [(String, Maybe Expr)]
 exprCases =
@@ -32,16 +31,16 @@ exprCases =
     ]
 
 exprTest :: String -> Maybe Expr -> IO ()
-exprTest input expected_ = case (runParser pExpr () "test" input, expected_) of
+exprTest input expected_ = case (parseExpr input, expected_) of
     (Left _, Nothing) -> return ()
-    (Left err, Just expected) -> error $ concat
-        ["Expected ", show expected, " but got parse error:", show err]
+    (Left err, Just want) -> error $ concat
+        ["Expected ", show want, " but got error:", show err]
     (Right actual, Nothing) ->
         error $ "Expected parse failure, but parsed " ++ show actual
-    (Right actual, Just expected)
-        | actual == expected -> return ()
+    (Right actual, Just want)
+        | actual == want -> return ()
         | otherwise -> error $ concat
-            ["Expected ", show expected, " but parsed ", show actual]
+            ["Expected ", show want, " but parsed ", show actual]
 
 main :: IO ()
 main = mapM_ (uncurry exprTest) exprCases

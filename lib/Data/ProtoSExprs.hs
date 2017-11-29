@@ -4,18 +4,19 @@
 {-# LANGUAGE TypeOperators     #-}
 module Data.ProtoSExprs
   ( Expr(..)
-  , pExpr
-  , pManyExpr
+  , Error
+  , expected
   , ToExpr(..)
   , FromExpr(..)
+  , parseExpr
+  , parseManyExpr
   ) where
 
 import Control.Monad (void)
 import Data.List     (intersperse)
 
 import GHC.Generics
-import Text.ParserCombinators.Parsec hiding (ParseError)
-
+import Text.ParserCombinators.Parsec
 
 data Expr
     = List [Expr]
@@ -23,6 +24,40 @@ data Expr
     | Str String
     deriving(Eq)
 
+data Error
+    = ParsecError ParseError
+    | ConversionError String
+    deriving(Show)
+
+expected :: Expr -> String -> Error
+expected got wanted =
+    ConversionError $ "Expected " ++ wanted ++ " but got " ++ show got
+
+class ToExpr a where
+    toExpr :: a -> Expr
+    listToExpr :: [a] -> Expr
+    default toExpr :: (Generic a, ToExpr' (Rep a)) => a -> Expr
+    toExpr x = toExpr' (from x)
+    listToExpr = List . map toExpr
+
+class FromExpr a where
+    fromExpr :: Expr -> Either Error a
+
+instance ToExpr Expr where
+    toExpr = id
+
+instance FromExpr Expr where
+    fromExpr = Right
+
+parseExpr :: FromExpr a => String -> Either Error a
+parseExpr input = case parse pExpr "" input of
+    Left err  -> Left (ParsecError err)
+    Right val -> fromExpr val
+
+parseManyExpr :: FromExpr a => String -> Either Error a
+parseManyExpr input = case parse pManyExpr "" input of
+    Left err   -> Left (ParsecError err)
+    Right vals -> fromExpr (List vals)
 
 instance Show Expr where
     show (List as) = "(" ++ concat (intersperse " " (map show as)) ++ ")"
@@ -83,22 +118,9 @@ pStr = Str <$> (char '"' *> (concat <$> many encoded) <* char '"') where
         chrs <- count n hexDigit
         return $ (:[]) . toEnum . read $ "0x" ++ chrs
 
--- | TODO: make this a more structured type.
-type ParseError = String
-
-class FromExpr a where
-    fromExpr :: Expr -> Either ParseError a
-
 instance FromExpr String where
     fromExpr (Str s) = Right s
-    fromExpr expr    = Left $ "Expected string but got " ++ show expr
-
-class ToExpr a where
-    toExpr :: a -> Expr
-    listToExpr :: [a] -> Expr
-    default toExpr :: (Generic a, ToExpr' (Rep a)) => a -> Expr
-    toExpr x = toExpr' (from x)
-    listToExpr = List . map toExpr
+    fromExpr expr    = Left $ expected expr "string"
 
 class ToExpr' f where
     toExpr' :: f p -> Expr
@@ -133,7 +155,6 @@ instance (ToExpr' f, ToExpr' g) => ToExpr' (f :*: g) where
       where
         asList (List list) = list
         asList expr        = [expr]
-
 
 instance ToExpr Char where
     toExpr c = Atom [c] -- TODO: figure out a better way to represent chars.
