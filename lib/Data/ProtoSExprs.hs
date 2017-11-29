@@ -7,13 +7,14 @@ module Data.ProtoSExprs
   , pExpr
   , pManyExpr
   , ToExpr(..)
+  , FromExpr(..)
   ) where
 
 import Control.Monad (void)
 import Data.List     (intersperse)
 
 import GHC.Generics
-import Text.ParserCombinators.Parsec
+import Text.ParserCombinators.Parsec hiding (ParseError)
 
 
 data Expr
@@ -81,6 +82,16 @@ pStr = Str <$> (char '"' *> (concat <$> many encoded) <* char '"') where
     hexEsc n = do
         chrs <- count n hexDigit
         return $ (:[]) . toEnum . read $ "0x" ++ chrs
+
+-- | TODO: make this a more structured type.
+type ParseError = String
+
+class FromExpr a where
+    fromExpr :: Expr -> Either ParseError a
+
+instance FromExpr String where
+    fromExpr (Str s) = Right s
+    fromExpr expr    = Left $ "Expected string but got " ++ show expr
 
 class ToExpr a where
     toExpr :: a -> Expr
