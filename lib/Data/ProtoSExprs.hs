@@ -162,3 +162,99 @@ instance ToExpr Char where
 
 instance ToExpr a => ToExpr [a] where
     toExpr = listToExpr
+
+
+-------- Boilerplate instances for tuples (up to 6) --------------------------
+
+instance ToExpr () where
+    toExpr () = List []
+
+instance FromExpr () where
+    fromExpr (List []) = Right ()
+    fromExpr expr      = Left $ expected expr "()"
+
+instance (ToExpr a, ToExpr b) => ToExpr (a, b) where
+    toExpr (a, b) = List [toExpr a, toExpr b]
+
+instance (FromExpr a, FromExpr b) => FromExpr (a, b) where
+    fromExpr (List [a, b]) = (,) <$> fromExpr a <*> fromExpr b
+    fromExpr expr          = Left $ expected expr "2-tuple"
+
+instance (ToExpr a, ToExpr b, ToExpr c) => ToExpr (a, b, c) where
+    toExpr (a, b, c) = List [toExpr a, toExpr b, toExpr c]
+
+instance (FromExpr a, FromExpr b, FromExpr c) => FromExpr (a, b, c) where
+    fromExpr (List [a, b, c]) = (,,) <$> fromExpr a <*> fromExpr b <*> fromExpr c
+    fromExpr expr = Left $ expected expr "3-tuple"
+
+instance (ToExpr a, ToExpr b, ToExpr c, ToExpr d) => ToExpr (a, b, c, d) where
+    toExpr (a, b, c, d) = List [toExpr a, toExpr b, toExpr c, toExpr d]
+
+instance
+    ( FromExpr a
+    , FromExpr b
+    , FromExpr c
+    , FromExpr d
+    ) => FromExpr (a, b, c, d)
+  where
+    fromExpr (List [a, b, c, d]) = (,,,)
+        <$> fromExpr a
+        <*> fromExpr b
+        <*> fromExpr c
+        <*> fromExpr d
+    fromExpr expr = Left $ expected expr "4-tuple"
+
+instance
+    ( ToExpr a
+    , ToExpr b
+    , ToExpr c
+    , ToExpr d
+    , ToExpr e
+    ) => ToExpr (a, b, c, d, e) where
+    toExpr (a, b, c, d, e) =
+        List [toExpr a, toExpr b, toExpr c, toExpr d, toExpr e]
+
+instance
+    ( FromExpr a
+    , FromExpr b
+    , FromExpr c
+    , FromExpr d
+    , FromExpr e
+    ) => FromExpr (a, b, c, d, e)
+  where
+    fromExpr (List [a, b, c, d, e]) = (,,,,)
+        <$> fromExpr a
+        <*> fromExpr b
+        <*> fromExpr c
+        <*> fromExpr d
+        <*> fromExpr e
+    fromExpr expr = Left $ expected expr "5-tuple"
+
+instance
+    ( ToExpr a
+    , ToExpr b
+    , ToExpr c
+    , ToExpr d
+    , ToExpr e
+    , ToExpr f
+    ) => ToExpr (a, b, c, d, e, f) where
+    toExpr (a, b, c, d, e, f) =
+        List [toExpr a, toExpr b, toExpr c, toExpr d, toExpr e, toExpr f]
+
+instance
+    ( FromExpr a
+    , FromExpr b
+    , FromExpr c
+    , FromExpr d
+    , FromExpr e
+    , FromExpr f
+    ) => FromExpr (a, b, c, d, e, f)
+  where
+    fromExpr (List [a, b, c, d, e, f]) = (,,,,,)
+        <$> fromExpr a
+        <*> fromExpr b
+        <*> fromExpr c
+        <*> fromExpr d
+        <*> fromExpr e
+        <*> fromExpr f
+    fromExpr expr = Left $ expected expr "6-tuple"
