@@ -42,6 +42,8 @@ class ToExpr a where
 
 class FromExpr a where
     fromExpr :: Expr -> Either Error a
+    default fromExpr :: (Generic a, FromExpr' (Rep a)) => Expr -> Either Error a
+    fromExpr x = to <$> (fromExpr' x)
 
 instance ToExpr Expr where
     toExpr = id
@@ -127,6 +129,20 @@ instance {-# OVERLAPS #-} ToExpr String where
 
 class ToExpr' f where
     toExpr' :: f p -> Expr
+
+class FromExpr' f where
+    fromExpr' :: Expr -> Either Error (f p)
+
+instance (FromExpr' f, FromExpr' g) => FromExpr' (f :+: g) where
+    fromExpr' ex = case (L1 <$> fromExpr' ex, R1 <$> fromExpr' ex) of
+        (res@(Right _), _) -> res
+        (_, res@(Right _)) -> res
+        (Left l, Left r) ->
+            -- XXX TODO: this is going to generate ugly errors like
+            -- @got ... but expected got ... but expected ... or got ... but
+            -- expected ...@. We should refactor our errors a bit so we can
+            -- do something more reasonable.
+            Left $ expected ex (show l ++ " or " ++ show r)
 
 instance ToExpr' V1 where
     toExpr' _ = undefined
