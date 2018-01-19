@@ -18,7 +18,7 @@ cabal-version:       >=1.10
 
 library
   exposed-modules:
-    Data.ProtoSExprs
+    Codec.SExpr
   ghc-options:
     -Wall
   build-depends:
