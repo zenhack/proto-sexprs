@@ -1,6 +1,11 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeOperators     #-}
 {-# LANGUAGE ViewPatterns      #-}
+-- GHC warns orphan about orphan instances if they cross *module* boundaries.
+-- package (or cabal project) boundaries would make more sense. Since our
+-- classes are defined in a different module from our instances, we disable
+-- this warning for this module:
+{-# OPTIONS_GHC -Wno-orphans #-}
 module Codec.SExpr.Internal.Instances where
 
 import GHC.Generics
@@ -63,9 +68,12 @@ instance AsSExpr' V1 where
 
 instance AsSExpr' U1 where
     encode' _ = List []
+    decode' (List []) = pure U1
+    decode' ex        = Left $ expected ex "()"
 
 instance AsSExpr c => AsSExpr' (K1 i c) where
     encode' (K1 c) = encode c
+    decode' c = K1 <$> decode c
 
 instance (Constructor t, AsSExpr' f) => AsSExpr' (C1 t f) where
     encode' con@(M1 x) = case encode' x of
@@ -74,6 +82,7 @@ instance (Constructor t, AsSExpr' f) => AsSExpr' (C1 t f) where
 
 instance (Datatype t, AsSExpr' f) => AsSExpr' (D1 t f) where
     encode' (M1 x) = encode' x
+    decode' x = M1 <$> decode' x
 
 instance (AsSExpr' f) => AsSExpr' (S1 t f) where
     encode' (M1 x) = encode' x
@@ -84,6 +93,7 @@ instance (AsSExpr' f, AsSExpr' g) => AsSExpr' (f :*: g) where
       where
         asList (List list) = list
         asList expr        = [expr]
+
 -------------------- Tuples (up to 6); lots of boilerplate -----------------
 
 instance AsSExpr () where
