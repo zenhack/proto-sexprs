@@ -35,10 +35,8 @@ expected got wanted =
 
 class ToExpr a where
     toExpr :: a -> Expr
-    listToExpr :: [a] -> Expr
     default toExpr :: (Generic a, ToExpr' (Rep a)) => a -> Expr
     toExpr x = toExpr' (from x)
-    listToExpr = List . map toExpr
 
 class FromExpr a where
     fromExpr :: Expr -> Either Error a
@@ -118,9 +116,12 @@ pStr = Str <$> (char '"' *> (concat <$> many encoded) <* char '"') where
         chrs <- count n hexDigit
         return $ (:[]) . toEnum . read $ "0x" ++ chrs
 
-instance FromExpr String where
+instance {-# OVERLAPS #-} FromExpr String where
     fromExpr (Str s) = Right s
     fromExpr expr    = Left $ expected expr "string"
+
+instance {-# OVERLAPS #-} ToExpr String where
+    toExpr = Str
 
 class ToExpr' f where
     toExpr' :: f p -> Expr
@@ -158,11 +159,13 @@ instance (ToExpr' f, ToExpr' g) => ToExpr' (f :*: g) where
 
 instance ToExpr Char where
     toExpr c = Atom [c] -- TODO: figure out a better way to represent chars.
-    listToExpr xs = Str xs
 
 instance ToExpr a => ToExpr [a] where
-    toExpr = listToExpr
+    toExpr = List . map toExpr
 
+instance FromExpr a => FromExpr [a] where
+    fromExpr (List xs) = mapM fromExpr xs
+    fromExpr ex        = Left $ expected ex "list"
 
 -------- Boilerplate instances for tuples (up to 6) --------------------------
 
