@@ -144,7 +144,7 @@ instance (Constructor t, ToExpr' f) => ToExpr' (C1 t f) where
         expr       -> List [Atom (conName con), expr]
 
 instance (Datatype t, ToExpr' f) => ToExpr' (D1 t f) where
-    toExpr' d@(M1 x) = toExpr' x
+    toExpr' (M1 x) = toExpr' x
 
 instance (ToExpr' f) => ToExpr' (S1 t f) where
     toExpr' (M1 x) = toExpr' x

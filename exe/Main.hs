@@ -27,6 +27,7 @@ instance FromExpr LangStmt where
     fromExpr (List [Atom var, Atom ":=", ex]) = Assign var <$> fromExpr ex
     fromExpr ex                               = Left $ expected ex "Statement"
 
+main :: IO ()
 main = do
     contents <- getContents
     let exprs :: Either Error LangStmt
