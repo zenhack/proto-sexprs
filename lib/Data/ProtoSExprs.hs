@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeOperators     #-}
+{-# LANGUAGE ViewPatterns      #-}
 module Data.ProtoSExprs
   ( Expr(..)
   , Error
@@ -14,6 +15,7 @@ module Data.ProtoSExprs
 
 import Control.Monad (void)
 import Data.List     (intersperse)
+import Text.Read     (readMaybe)
 
 import GHC.Generics
 import Text.ParserCombinators.Parsec
@@ -261,3 +263,13 @@ instance
         <*> fromExpr e
         <*> fromExpr f
     fromExpr expr = Left $ expected expr "6-tuple"
+
+
+--- basic types
+
+instance ToExpr Int where
+    toExpr = Atom . show
+
+instance FromExpr Int where
+    fromExpr (Atom (readMaybe -> Just n)) = pure n
+    fromExpr ex                           = Left $ expected ex "Int"
