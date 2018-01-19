@@ -11,6 +11,7 @@ instance ToExpr LangStmt
 
 data LangExpr
     = LangString String
+    | LangVar String
     | LangBinOp String LangExpr LangExpr
     deriving(Show, Generic)
 instance ToExpr LangExpr
@@ -20,6 +21,7 @@ instance FromExpr LangExpr where
     fromExpr (Str s) = pure (LangString s)
     fromExpr (List [Atom op, lhs, rhs]) =
         LangBinOp op <$> fromExpr lhs <*> fromExpr rhs
+    fromExpr (Atom v) = pure (LangVar v)
     fromExpr ex = Left $ expected ex "Expression"
 
 instance FromExpr LangStmt where
@@ -30,7 +32,7 @@ instance FromExpr LangStmt where
 main :: IO ()
 main = do
     contents <- getContents
-    let exprs :: Either Error LangStmt
+    let exprs :: Either Error [LangStmt]
         exprs = parseManyExpr contents
     print exprs
     print $ toExpr $ Loop [ Assign "x" (LangString "hello")
