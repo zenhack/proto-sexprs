@@ -8,11 +8,15 @@ import Control.Monad (void)
 import Codec.SExpr.Internal.Types
 import Text.ParserCombinators.Parsec
 
+-- | Parse a string containing one S-expression, and convert it to a value.
 parseExpr :: AsSExpr a => String -> Either Error a
 parseExpr input = case parse pExpr "" input of
     Left err  -> Left (ParsecError err)
     Right val -> decode val
 
+-- | Parse a string containing a sequence of top-level S-expressions, and
+-- convert it to a value. The S-expressions are passed to 'decode' as a
+-- single list.
 parseManyExpr :: AsSExpr a => String -> Either Error a
 parseManyExpr input = case parse pManyExpr "" input of
     Left err   -> Left (ParsecError err)

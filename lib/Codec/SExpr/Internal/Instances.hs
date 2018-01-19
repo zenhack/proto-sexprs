@@ -50,6 +50,8 @@ instance AsSExpr a => AsSExpr [a] where
 
 --------------------------------- Generics ---------------------------------
 
+-- TODO FIXME: most of these still don't define decode'
+
 instance (AsSExpr' f, AsSExpr' g) => AsSExpr' (f :+: g) where
     encode' (L1 x) = encode' x
     encode' (R1 x) = encode' x
