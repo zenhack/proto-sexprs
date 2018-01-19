@@ -18,7 +18,11 @@ cabal-version:       >=1.10
 
 library
   exposed-modules:
-    Codec.SExpr
+      Codec.SExpr
+  other-modules:
+      Codec.SExpr.Internal.Types
+    , Codec.SExpr.Internal.Instances
+    , Codec.SExpr.Internal.Parser
   ghc-options:
     -Wall
   build-depends:
