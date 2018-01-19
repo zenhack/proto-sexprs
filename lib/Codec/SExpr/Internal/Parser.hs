@@ -1,4 +1,7 @@
-module Codec.SExpr.Internal.Parser where
+module Codec.SExpr.Internal.Parser
+    ( parseExpr
+    , parseManyExpr
+    ) where
 
 import Control.Monad (void)
 
