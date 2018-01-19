@@ -2,8 +2,6 @@
 import Data.ProtoSExprs
 import GHC.Generics     (Generic(..))
 
-import Text.ParserCombinators.Parsec (runParser)
-
 data LangStmt
     = Loop [LangStmt]
     | Assign String LangExpr
@@ -18,24 +16,22 @@ data LangExpr
 instance ToExpr LangExpr
 
 
+instance FromExpr LangExpr where
+    fromExpr (Str s) = pure (LangString s)
+    fromExpr (List [Atom op, lhs, rhs]) =
+        LangBinOp op <$> fromExpr lhs <*> fromExpr rhs
+    fromExpr ex = Left $ expected ex "Expression"
 
-parseExpr :: Expr -> Maybe LangExpr
-parseExpr (Str s) = Just (LangString s)
-parseExpr (List [Atom op, lhs, rhs]) =
-    LangBinOp op <$> parseExpr lhs <*> parseExpr rhs
-parseExpr _ = Nothing
-
-parseStmt :: Expr -> Maybe LangStmt
-parseStmt (List (Atom "loop":stmts))       = Loop <$> mapM parseStmt stmts
-parseStmt (List [Atom var, Atom ":=", ex]) = Assign var <$> parseExpr ex
-parseStmt _                                = Nothing
+instance FromExpr LangStmt where
+    fromExpr (List (Atom "loop":stmts))       = Loop <$> mapM fromExpr stmts
+    fromExpr (List [Atom var, Atom ":=", ex]) = Assign var <$> fromExpr ex
+    fromExpr ex                               = Left $ expected ex "Statement"
 
 main = do
     contents <- getContents
-    let exprs = runParser pFile () "" contents
+    let exprs :: Either Error LangStmt
+        exprs = parseManyExpr contents
     print exprs
-    let stmts = map parseStmt <$> exprs
-    print $ map parseStmt <$> exprs
     print $ toExpr $ Loop [ Assign "x" (LangString "hello")
                           , Assign "y" (LangBinOp "+" (LangString "f")
                                                       (LangString "x"))
