@@ -16,8 +16,8 @@ import Text.Read (readMaybe)
 
 
 -- TODO: figure out where to put this:
-expected :: Expr -> String -> Error
-expected got wanted =
+expected :: Expr -> String -> Either Error a
+expected got wanted = Left $
     ConversionError $ "Expected " ++ wanted ++ " but got " ++ show got
 
 -- Expr's instance is just the identity:
@@ -30,23 +30,23 @@ instance AsSExpr Expr where
 instance AsSExpr Int where
     encode = Atom . show
     decode (Atom (readMaybe -> Just n)) = pure n
-    decode ex                           = Left $ expected ex "Int"
+    decode ex                           = expected ex "Int"
 
 instance AsSExpr Char where
     encode c = Atom [c] -- TODO: figure out a better way to represent chars.
     decode (Atom [c]) = pure c
-    decode ex         = Left $ expected ex "character"
+    decode ex         = expected ex "character"
 
 -- We encode [Char] as Str, whereas haskell lists of other types encode as List.
 instance {-# OVERLAPS #-} AsSExpr String where
     encode = Str
     decode (Str s) = Right s
-    decode expr    = Left $ expected expr "string"
+    decode expr    = expected expr "string"
 
 instance AsSExpr a => AsSExpr [a] where
     encode = List . map encode
     decode (List xs) = mapM decode xs
-    decode ex        = Left $ expected ex "list"
+    decode ex        = expected ex "list"
 
 --------------------------------- Generics ---------------------------------
 
@@ -63,7 +63,7 @@ instance (AsSExpr' f, AsSExpr' g) => AsSExpr' (f :+: g) where
             -- @got ... but expected got ... but expected ... or got ... but
             -- expected ...@. We should refactor our errors a bit so we can
             -- do something more reasonable.
-            Left $ expected ex (show l ++ " or " ++ show r)
+            expected ex (show l ++ " or " ++ show r)
 
 instance AsSExpr' V1 where
     encode' _ = undefined
@@ -71,7 +71,7 @@ instance AsSExpr' V1 where
 instance AsSExpr' U1 where
     encode' _ = List []
     decode' (List []) = pure U1
-    decode' ex        = Left $ expected ex "()"
+    decode' ex        = expected ex "()"
 
 instance AsSExpr c => AsSExpr' (K1 i c) where
     encode' (K1 c) = encode c
@@ -101,17 +101,17 @@ instance (AsSExpr' f, AsSExpr' g) => AsSExpr' (f :*: g) where
 instance AsSExpr () where
     encode () = List []
     decode (List []) = Right ()
-    decode expr      = Left $ expected expr "()"
+    decode expr      = expected expr "()"
 
 instance (AsSExpr a, AsSExpr b) => AsSExpr (a, b) where
     encode (a, b) = List [encode a, encode b]
     decode (List [a, b]) = (,) <$> decode a <*> decode b
-    decode expr          = Left $ expected expr "2-tuple"
+    decode expr          = expected expr "2-tuple"
 
 instance (AsSExpr a, AsSExpr b, AsSExpr c) => AsSExpr (a, b, c) where
     encode (a, b, c) = List [encode a, encode b, encode c]
     decode (List [a, b, c]) = (,,) <$> decode a <*> decode b <*> decode c
-    decode expr             = Left $ expected expr "3-tuple"
+    decode expr             = expected expr "3-tuple"
 
 instance (AsSExpr a, AsSExpr b, AsSExpr c, AsSExpr d) => AsSExpr (a, b, c, d) where
     encode (a, b, c, d) = List [encode a, encode b, encode c, encode d]
@@ -120,7 +120,7 @@ instance (AsSExpr a, AsSExpr b, AsSExpr c, AsSExpr d) => AsSExpr (a, b, c, d) wh
         <*> decode b
         <*> decode c
         <*> decode d
-    decode expr = Left $ expected expr "4-tuple"
+    decode expr = expected expr "4-tuple"
 
 instance
     ( AsSExpr a
@@ -138,7 +138,7 @@ instance
         <*> decode c
         <*> decode d
         <*> decode e
-    decode expr = Left $ expected expr "5-tuple"
+    decode expr = expected expr "5-tuple"
 
 instance
     ( AsSExpr a
@@ -158,4 +158,4 @@ instance
         <*> decode d
         <*> decode e
         <*> decode f
-    decode expr = Left $ expected expr "6-tuple"
+    decode expr = expected expr "6-tuple"
