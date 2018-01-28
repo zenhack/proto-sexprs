@@ -12,18 +12,19 @@ import GHC.Generics
 
 import Codec.SExpr.Internal.Types
 
-import Text.Read (readMaybe)
+import Control.Applicative ((<|>))
+import Text.Read           (readMaybe)
 
 
 -- TODO: figure out where to put this:
-expected :: Expr -> String -> Either Error a
-expected got wanted = Left $
-    ConversionError $ "Expected " ++ wanted ++ " but got " ++ show got
+expected :: Expr -> String -> Decode a
+expected got wanted = Decode $ Left $
+    ConversionError $ Just $ "Expected " ++ wanted ++ " but got " ++ show got
 
 -- Expr's instance is just the identity:
 instance AsSExpr Expr where
     encode = id
-    decode = Right
+    decode = pure
 
 ---------------------------- Types from the prelude ------------------------
 
@@ -40,7 +41,7 @@ instance AsSExpr Char where
 -- We encode [Char] as Str, whereas haskell lists of other types encode as List.
 instance {-# OVERLAPS #-} AsSExpr String where
     encode = Str
-    decode (Str s) = Right s
+    decode (Str s) = pure s
     decode expr    = expected expr "string"
 
 instance AsSExpr a => AsSExpr [a] where
@@ -55,15 +56,7 @@ instance AsSExpr a => AsSExpr [a] where
 instance (AsSExpr' f, AsSExpr' g) => AsSExpr' (f :+: g) where
     encode' (L1 x) = encode' x
     encode' (R1 x) = encode' x
-    decode' ex = case (L1 <$> decode' ex, R1 <$> decode' ex) of
-        (res@(Right _), _) -> res
-        (_, res@(Right _)) -> res
-        (Left l, Left r) ->
-            -- XXX TODO: this is going to generate ugly errors like
-            -- @got ... but expected got ... but expected ... or got ... but
-            -- expected ...@. We should refactor our errors a bit so we can
-            -- do something more reasonable.
-            expected ex (show l ++ " or " ++ show r)
+    decode' ex = (L1 <$> decode' ex) <|> (R1 <$> decode' ex)
 
 instance AsSExpr' V1 where
     encode' _ = undefined
@@ -100,7 +93,7 @@ instance (AsSExpr' f, AsSExpr' g) => AsSExpr' (f :*: g) where
 
 instance AsSExpr () where
     encode () = List []
-    decode (List []) = Right ()
+    decode (List []) = pure ()
     decode expr      = expected expr "()"
 
 instance (AsSExpr a, AsSExpr b) => AsSExpr (a, b) where

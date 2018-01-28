@@ -12,7 +12,7 @@ import Text.ParserCombinators.Parsec
 parseExpr :: AsSExpr a => String -> Either Error a
 parseExpr input = case parse pExpr "" input of
     Left err  -> Left (ParsecError err)
-    Right val -> decode val
+    Right val -> runDecode $ decode val
 
 -- | Parse a string containing a sequence of top-level S-expressions, and
 -- convert it to a value. The S-expressions are passed to 'decode' as a
@@ -20,7 +20,7 @@ parseExpr input = case parse pExpr "" input of
 parseManyExpr :: AsSExpr a => String -> Either Error a
 parseManyExpr input = case parse pManyExpr "" input of
     Left err   -> Left (ParsecError err)
-    Right vals -> decode (List vals)
+    Right vals -> runDecode $ decode (List vals)
 
 comment :: Parser String
 comment = char ';' >> many (noneOf "\n")

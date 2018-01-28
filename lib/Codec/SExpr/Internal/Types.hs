@@ -1,9 +1,11 @@
-{-# LANGUAGE DefaultSignatures #-}
-{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE DefaultSignatures          #-}
+{-# LANGUAGE FlexibleContexts           #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Codec.SExpr.Internal.Types where
 
-import Data.List    (intersperse)
-import GHC.Generics (Generic(..))
+import Control.Applicative (Alternative(..))
+import Data.List           (intersperse)
+import GHC.Generics        (Generic(..))
 
 import Text.ParserCombinators.Parsec (ParseError)
 
@@ -17,8 +19,16 @@ data Expr
 -- | an error when encoding/decoding a value
 data Error
     = ParsecError ParseError
-    | ConversionError String
+    | ConversionError (Maybe String)
     deriving(Show)
+
+newtype Decode a = Decode { runDecode :: Either Error a }
+    deriving(Show, Functor, Applicative, Monad)
+
+instance Alternative Decode where
+    Decode (Left _) <|> d = d
+    d <|> _ = d
+    empty = Decode (Left (ConversionError Nothing))
 
 -- | A type which is an instance of @'AsExpr'@ can be converted to and
 -- from S-expressions.
@@ -27,10 +37,10 @@ class AsSExpr a where
     encode :: a -> Expr
 
     -- | Convert an S-expression to a value.
-    decode :: Expr -> Either Error a
+    decode :: Expr -> Decode a
 
     default encode :: (Generic a, AsSExpr' (Rep a)) => a -> Expr
-    default decode :: (Generic a, AsSExpr' (Rep a)) => Expr -> Either Error a
+    default decode :: (Generic a, AsSExpr' (Rep a)) => Expr -> Decode a
 
     encode = genericEncode
     decode = genericDecode
@@ -40,13 +50,13 @@ genericEncode :: (Generic a, AsSExpr' (Rep a)) => a -> Expr
 genericEncode x = encode' (from x)
 
 -- | Decode a type which implements Generic.
-genericDecode :: (Generic a, AsSExpr' (Rep a)) => Expr -> Either Error a
+genericDecode :: (Generic a, AsSExpr' (Rep a)) => Expr -> Decode a
 genericDecode x = to <$> (decode' x)
 
 -- | Auxiliary class used to implement AsSExpr in terms of ghc generics.
 class AsSExpr' f where
     encode' :: f p -> Expr
-    decode' :: Expr -> Either Error (f p)
+    decode' :: Expr -> Decode (f p)
 
 -- XXX: This doesn't follow the guideline of emitting runnable haskell code;
 -- maybe we should do something different? We could output something like
