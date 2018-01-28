@@ -4,6 +4,7 @@
 module Codec.SExpr
   ( Expr(..)
   , Error
+  , Decode(runDecode)
   , expected
   , AsSExpr(..)
   , parseExpr
