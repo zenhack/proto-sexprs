@@ -59,7 +59,9 @@ instance (AsSExpr' f, AsSExpr' g) => AsSExpr' (f :+: g) where
     decode' ex = (L1 <$> decode' ex) <|> (R1 <$> decode' ex)
 
 instance AsSExpr' V1 where
+    -- V1 is uninhabited.
     encode' _ = undefined
+    decode' _ = undefined
 
 instance AsSExpr' U1 where
     encode' _ = List []
@@ -74,13 +76,28 @@ instance (Constructor t, AsSExpr' f) => AsSExpr' (C1 t f) where
     encode' con@(M1 x) = case encode' x of
         List exprs -> List $ Atom (conName con) : exprs
         expr       -> List [Atom (conName con), expr]
+    decode' ex@(List (Atom x:xs)) = do
+        ret <- M1 <$> decode' (List xs)
+        let wantCon = conName ret
+        let haveCon = x
+        if wantCon == haveCon
+            then pure ret
+            else expected ex wantCon
+    decode' ex = expected ex "TODO"
 
 instance (Datatype t, AsSExpr' f) => AsSExpr' (D1 t f) where
-    encode' (M1 x) = encode' x
-    decode' x = M1 <$> decode' x
+  encode' (M1 x) = encode' x
+  decode' x = M1 <$> decode' x
 
 instance (AsSExpr' f) => AsSExpr' (S1 t f) where
     encode' (M1 x) = encode' x
+    -- We need to treat List [_] specially so that if e.g. we have
+    -- "(foo x y)", the decoder for y sees (Atom "y") instead of
+    -- (List [Atom "x"])
+    --
+    -- TODO:  is there a stricter way to handle this?
+    decode' x@(List [y]) = M1 <$> (decode' x <|> decode' y)
+    decode' x            = M1 <$> decode' x
 
 instance (AsSExpr' f, AsSExpr' g) => AsSExpr' (f :*: g) where
     encode' (l :*: r) =
