@@ -53,4 +53,8 @@ test-suite tests
   build-depends:
       base >= 4.9 && < 5.0
     , proto-sexprs
+    , QuickCheck
+    , tasty
+    , tasty-hunit
+    , tasty-quickcheck
   default-language:    Haskell2010

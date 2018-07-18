@@ -20,7 +20,7 @@ data Expr
 data Error
     = ParsecError ParseError
     | ConversionError (Maybe String)
-    deriving(Show)
+    deriving(Show, Eq)
 
 newtype Decode a = Decode { runDecode :: Either Error a }
     deriving(Show, Functor, Applicative, Monad)
